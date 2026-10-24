@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Monitoring Presensi & Jadwal (CRC)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+    .sticky-col-1 { position: sticky; left: 0; z-index: 10; background-color: #ffffff; }
+    .sticky-col-2 { position: sticky; left: 180px; z-index: 10; background-color: #ffffff; }
+    .sticky-col-3 { position: sticky; left: 250px; z-index: 10; background-color: #ffffff; border-right: 2px solid #e2e8f0; }
+    .sticky-right { position: sticky; right: 0; z-index: 10; background-color: #f8fafc; border-left: 2px solid #e2e8f0; }
+    th.sticky-col-1, th.sticky-col-2, th.sticky-col-3, th.sticky-right { background-color: #f1f5f9; z-index: 20; }
+    .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-900 text-white px-6 py-4 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="bg-indigo-500 text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wider">CRC Portal</span>
+          <h1 class="text-xl font-bold tracking-tight">Dashboard Sistem Monitoring Presensi & Jadwal</h1>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Pemantauan Jam Operasional, Penangguhan Kewajiban (Izin/Cuti), Riwayat Koreksi Jadwal & Kalender Branch</p>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-300">
+        <span>Status Sistem: <strong class="text-emerald-400">Aktif & Tersinkronisasi</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- BAGIAN 1: GLOBAL FILTER (STICKY) -->
+  <section class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm px-6 py-3.5">
+    <div class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Filter Branch</label>
+          <select id="filterBranch" onchange="applyAllFilters()" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+            <option value="ALL">Semua Branch</option>
+            <option value="Temas">Temas</option>
+            <option value="Ambarawa">Ambarawa</option>
+            <option value="Pakis">Pakis</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Posisi / Role</label>
+          <select id="filterRole" onchange="applyAllFilters()" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+            <option value="ALL">Semua Posisi (AE & BL)</option>
+            <option value="AE">AE (Account Executive)</option>
+            <option value="BL">BL (Branch Leader)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Bulan</label>
+          <select id="filterMonth" onchange="applyAllFilters()" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+            <option value="9">September</option>
+            <option value="10" selected>Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Desember</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Tahun</label>
+          <select id="filterYear" onchange="applyAllFilters()" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Mode / Tanggal</label>
+          <select id="filterDay" onchange="applyAllFilters()" class="w-full rounded-lg border border-indigo-300 bg-indigo-50/60 px-3 py-2 text-sm font-semibold text-indigo-900">
+            <option value="ALL">Semua Tanggal (Rekap Bulanan)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Cari Karyawan</label>
+          <div class="relative">
+            <input type="text" id="filterSearch" oninput="applyAllFilters()" placeholder="Ketik nama AE / BL..." class="w-full rounded-lg border border-slate-300 bg-white pl-3 pr-8 py-2 text-sm text-slate-700" />
+            <button onclick="resetFilters()" title="Reset Filter" class="absolute right-2 top-2 text-xs text-slate-400 hover:text-slate-600">↺</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-7xl mx-auto px-6 mt-6 space-y-8">
+
+    <!-- KARTU RINGKASAN / KPI CARDS -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500">1. Ringkasan Kehadiran & Operasional</h2>
+        <span id="activeFilterLabel" class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">Menampilkan: Semua Branch • Oktober 2026</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+          <div class="text-xs font-medium text-slate-500">Total Karyawan (AE & BL)</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpiTotalEmp" class="text-2xl font-bold text-slate-900">0</span>
+            <span id="kpiRoleBreakdown" class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">0 AE • 0 BL</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+          <div class="text-xs font-medium text-slate-500">Rata-rata / Total Kehadiran</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpiAttendanceRate" class="text-2xl font-bold text-emerald-600">0%</span>
+            <span id="kpiTotalWorkDays" class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">0 Hari Kerja</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+          <div class="text-xs font-medium text-slate-500">Total Jam Operasional / Kerja</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpiTotalHours" class="text-2xl font-bold text-indigo-600">0 Jam</span>
+            <span class="text-xs text-slate-400">Akumulasi Periode</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+          <div class="text-xs font-medium text-slate-500">Total Izin & Cuti</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpiTotalLeave" class="text-2xl font-bold text-amber-600">0 Hari</span>
+            <span id="kpiLeaveBreakdown" class="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded">0 Izin • 0 Sakit • 0 Cuti</span>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-orange-200 bg-orange-50/30 shadow-sm">
+          <div class="text-xs font-medium text-orange-700">Total Koreksi Jadwal</div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpiTotalCorrections" class="text-2xl font-bold text-orange-600">0 Kali</span>
+            <span class="text-xs font-medium text-orange-700 bg-orange-100 px-2 py-0.5 rounded">Log Audit CRC</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BAGIAN 2: JAM KERJA & RIWAYAT KOREKSI -->
+    <section class="space-y-6">
+      <!-- 2A: TABEL DETAIL JAM KERJA -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-bold text-slate-900">2A. Tabel Detail Jam Kerja & Absensi</h3>
+              <span id="modeBadge2A" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Mode: Rekap Bulanan</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Pilih tanggal tertentu pada filter di atas (atau klik tombol di kanan) untuk melihat jam Check-In & Check-Out harian.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="quickSelectDate12()" class="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg">Lihat Contoh Harian (12 Okt)</button>
+            <button onclick="quickSelectMonthly()" class="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg">Lihat Rekap Sebulan</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead id="thead2A" class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500"></thead>
+            <tbody id="tbody2A" class="divide-y divide-slate-200 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2B: TABEL RIWAYAT KOREKSI PENJADWALAN -->
+      <div class="bg-white rounded-xl border border-orange-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-orange-50/50 border-b border-orange-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-bold text-slate-900">2B. Tabel Riwayat Koreksi Penjadwalan / Absensi</h3>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-orange-100 text-orange-800">Audit Log CRC</span>
+            </div>
+            <p class="text-xs text-slate-600 mt-0.5">Mencatat perubahan jadwal/status kehadiran (Contoh: BL mengubah status AE tanggal 12 dari Alpa menjadi Masuk).</p>
+          </div>
+          <button onclick="openSimulationModal()" class="bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm shrink-0">
+            + Simulasi Input Koreksi (BL Ubah Jadwal)
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <tr>
+                <th class="py-3 px-4">Waktu Input Koreksi</th>
+                <th class="py-3 px-4">Diubah Oleh (Eksekutor)</th>
+                <th class="py-3 px-4">Nama Karyawan</th>
+                <th class="py-3 px-4">Posisi</th>
+                <th class="py-3 px-4">Tanggal Jadwal</th>
+                <th class="py-3 px-4">Status Awal</th>
+                <th class="py-3 px-4">Status Baru</th>
+                <th class="py-3 px-4">Keterangan / Alasan Perubahan</th>
+              </tr>
+            </thead>
+            <tbody id="tbody2B" class="divide-y divide-slate-200 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- BAGIAN 3: TABEL DETAIL IZIN & CUTI -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200">
+        <h3 class="text-base font-bold text-slate-900">3. Tabel Detail Izin & Cuti (Penangguhan Kewajiban)</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Rekapitulasi izin, sakit, dan cuti karyawan pada branch dan periode terpilih (Tanpa lampiran bukti).</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <tr>
+              <th class="py-3 px-6">Nama Karyawan</th>
+              <th class="py-3 px-4">Branch</th>
+              <th class="py-3 px-4">Posisi (Role)</th>
+              <th class="py-3 px-4">Detail Kuota (Izin / Sakit / Cuti)</th>
+              <th class="py-3 px-4">Total Izin & Cuti</th>
+              <th class="py-3 px-6 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyLeave" class="divide-y divide-slate-200 text-sm"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- BAGIAN 4: MODUL KALENDER & MATRIKS JADWAL -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">4. Modul Kalender & Matriks Jadwal Karyawan per Branch</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Tip: Scroll horizontal untuk melihat tanggal 1 s/d 31. Arahkan kursor ke sel bertanda titik oranye untuk detail koreksi.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="exportCalendarCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg">⬇ Export CSV</button>
+            <button onclick="copyCalendarToClipboard()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3.5 py-2 rounded-lg">
+              <span id="copyBtnText">📋 Copy to Clipboard</span>
+            </button>
+          </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-3 text-xs">
+          <span class="font-semibold text-slate-500">Keterangan:</span>
+          <span class="px-2.5 py-1 rounded bg-emerald-50 text-emerald-800 border border-emerald-200"><strong>H</strong> = Hadir</span>
+          <span class="px-2.5 py-1 rounded bg-rose-100 text-rose-800 border border-rose-200"><strong>L</strong> = Libur</span>
+          <span class="px-2.5 py-1 rounded bg-amber-100 text-amber-800 border border-amber-300"><strong>S</strong> = Sakit</span>
+          <span class="px-2.5 py-1 rounded bg-sky-100 text-sky-800 border border-sky-200"><strong>I</strong> = Izin</span>
+          <span class="px-2.5 py-1 rounded bg-purple-100 text-purple-800 border border-purple-200"><strong>C</strong> = Cuti</span>
+          <span class="px-2.5 py-1 rounded bg-red-600 text-white"><strong>A</strong> = Alpa</span>
+          <span class="px-2.5 py-1 rounded bg-orange-50 text-orange-800 border border-orange-300">● Titik Oranye = Dikoreksi</span>
+        </div>
+      </div>
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-center border-collapse text-xs">
+          <thead id="calendarThead" class="bg-slate-100 text-slate-600 border-b border-slate-300"></thead>
+          <tbody id="calendarTbody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DETAIL JAM KERJA -->
+  <div id="modalWorkDetail" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <h4 id="modalWorkTitle" class="text-base font-bold">Detail Riwayat Jam Kerja</h4>
+          <p id="modalWorkSubtitle" class="text-xs text-slate-300 mt-0.5"></p>
+        </div>
+        <button onclick="closeModal('modalWorkDetail')" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead class="bg-slate-100 text-xs font-semibold uppercase text-slate-600 border-b">
+            <tr>
+              <th class="py-2.5 px-4">Tanggal</th>
+              <th class="py-2.5 px-4">Status</th>
+              <th class="py-2.5 px-4">Jadwal Shift</th>
+              <th class="py-2.5 px-4">Check-In</th>
+              <th class="py-2.5 px-4">Check-Out</th>
+              <th class="py-2.5 px-4">Jam Kerja</th>
+              <th class="py-2.5 px-4">Riwayat Koreksi</th>
+            </tr>
+          </thead>
+          <tbody id="modalWorkTbody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETAIL IZIN & CUTI -->
+  <div id="modalLeaveDetail" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <h4 id="modalLeaveTitle" class="text-base font-bold">Detail Riwayat Izin & Cuti</h4>
+          <p class="text-xs text-slate-300 mt-0.5">Penangguhan Kewajiban (Tanpa Lampiran Bukti)</p>
+        </div>
+        <button onclick="closeModal('modalLeaveDetail')" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead class="bg-slate-100 text-xs font-semibold uppercase text-slate-600 border-b">
+            <tr>
+              <th class="py-2.5 px-4">Tanggal Izin / Cuti</th>
+              <th class="py-2.5 px-4">Kategori</th>
+              <th class="py-2.5 px-4">Durasi</th>
+              <th class="py-2.5 px-4">Alasan</th>
+            </tr>
+          </thead>
+          <tbody id="modalLeaveTbody" class="divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SIMULASI KOREKSI JADWAL -->
+  <div id="modalSimulation" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-orange-600 text-white flex items-center justify-between">
+        <h4 class="text-base font-bold">Simulasi Koreksi Jadwal (BL Ubah Status)</h4>
+        <button onclick="closeModal('modalSimulation')" class="text-orange-200 hover:text-white text-xl font-bold">✕</button>
+      </div>
+      <form onsubmit="submitSimulationCorrection(event)" class="p-6 space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Diubah Oleh (BL)</label>
+          <select id="simExecutor" class="w-full rounded-lg border px-3 py-2">
+            <option value="Budi Santoso (BL - Temas)">Budi Santoso (BL - Temas)</option>
+            <option value="Siti Rahmawati (BL - Ambarawa)">Siti Rahmawati (BL - Ambarawa)</option>
+            <option value="Dimas Prayogo (BL - Pakis)">Dimas Prayogo (BL - Pakis)</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Pilih Karyawan</label>
+            <select id="simEmployee" onchange="updateSimInitialStatus()" class="w-full rounded-lg border px-3 py-2"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tanggal (Okt 2026)</label>
+            <select id="simDay" onchange="updateSimInitialStatus()" class="w-full rounded-lg border px-3 py-2"></select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Status Awal</label>
+            <input type="text" id="simOldStatus" readonly class="w-full bg-slate-200 font-bold rounded px-2.5 py-1.5 text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Status Baru</label>
+            <select id="simNewStatus" class="w-full rounded border border-indigo-400 bg-white px-2.5 py-1.5 text-xs font-semibold">
+              <option value="H">Masuk (08:00 - 17:00)</option>
+              <option value="L">Libur (Tukar Off)</option>
+              <option value="I">Izin</option>
+              <option value="S">Sakit</option>
+              <option value="C">Cuti</option>
+              <option value="A">Alpa</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Alasan Koreksi</label>
+          <input type="text" id="simReason" required value="Lupa check-in aplikasi, hadir kunjungan lapangan" class="w-full rounded-lg border px-3 py-2" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modalSimulation')" class="px-4 py-2 rounded-lg border text-xs font-semibold">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold">Simpan Koreksi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MURNI VANILLA JAVASCRIPT -->
+  <script>
+    const dayNamesShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    function getDayName(dayNumber, month = 10, year = 2026) {
+      return dayNamesShort[new Date(year, month - 1, dayNumber).getDay()];
+    }
+
+    const employees = [
+      { id: 'EMP1', name: 'Andi Pratama', role: 'AE', branch: 'Temas', daily: {}, leaveLogs: [] },
+      { id: 'EMP2', name: 'Budi Santoso', role: 'BL', branch: 'Temas', daily: {}, leaveLogs: [] },
+      { id: 'EMP3', name: 'Citra Lestari', role: 'AE', branch: 'Temas', daily: {}, leaveLogs: [] },
+      { id: 'EMP4', name: 'Siti Rahmawati', role: 'BL', branch: 'Ambarawa', daily: {}, leaveLogs: [] },
+      { id: 'EMP5', name: 'Rafi ', role: 'AE', branch: 'Ambarawa', daily: {}, leaveLogs: [] },
+      { id: 'EMP6', name: 'Udin', role: 'AE', branch: 'Ambarawa', daily: {}, leaveLogs: [] },
+      { id: 'EMP7', name: 'Dimas Prayogo', role: 'BL', branch: 'Pakis', daily: {}, leaveLogs: [] },
+      { id: 'EMP8', name: 'Brian ', role: 'AE', branch: 'Pakis', daily: {}, leaveLogs: [] }
+    ];
+
+    const correctionLogs = [
+      {
+        timestamp: '13 Okt 2026, 09:15', executor: 'Budi Santoso (BL)', empName: 'Karyawan A (Andi Pratama)',
+        role: 'AE', branch: 'Temas', day: 12, year: 2026, oldStatus: 'Alpa (A)', newStatus: 'Masuk (08:05 - 17:00)',
+        reason: 'Lupa check-in di aplikasi, ada kunjungan lapangan pagi bersama BL'
+      },
+      {
+        timestamp: '11 Okt 2026, 14:20', executor: 'Budi Santoso (BL)', empName: 'Karyawan C (Citra Lestari)',
+        role: 'AE', branch: 'Temas', day: 10, year: 2026, oldStatus: 'Masuk (H)', newStatus: 'Libur (Tukar Off)',
+        reason: 'Tukar jadwal libur akhir pekan dengan Karyawan A'
+      }
+    ];
+
+    function initDummySchedule() {
+      employees.forEach((emp, idx) => {
+        for (let d = 1; d <= 31; d++) {
+          const dayName = getDayName(d, 10, 2026);
+          const isLibur = dayName === 'Min' || (dayName === 'Sab' && (d + idx) % 2 === 0);
+          const status = isLibur ? 'L' : 'H';
+          emp.daily[d] = {
+            status,
+            shift: isLibur ? 'Off / Libur' : '08:00 - 17:00',
+            checkIn: status === 'H' ? '07:55' : '-',
+            checkOut: status === 'H' ? '17:02' : '-',
+            hours: status === 'H' ? 9 : 0,
+            corrected: false,
+            correctionNote: '-'
+          };
+        }
+      });
+
+      setLeave('EMP1', 15, 'I', 'Urusan keluarga mendadak di luar kota');
+      setLeave('EMP1', 22, 'C', 'Cuti tahunan acara pernikahan saudara');
+      employees[0].daily[12] = {
+        status: 'H', shift: '08:00 - 17:00', checkIn: '08:05', checkOut: '17:00', hours: 8.9,
+        corrected: true, correctionNote: 'Dikoreksi oleh Budi Santoso (BL): Alpa (A) → Masuk (08:05 - 17:00)'
+      };
+      setLeave('EMP3', 14, 'S', 'Istirahat medis (Demam)');
+      setLeave('EMP3', 27, 'A', 'Tanpa keterangan');
+      employees[2].daily[10] = {
+        status: 'L', shift: '08:00 - 17:00', checkIn: '-', checkOut: '-', hours: 0,
+        corrected: true, correctionNote: 'Dikoreksi oleh Budi Santoso (BL): Masuk (H) → Libur (Tukar Off)'
+      };
+      setLeave('EMP5', 16, 'S', 'Kontrol dokter');
+      setLeave('EMP6', 21, 'A', 'Belum presensi (Alpa)');
+    }
+
+    function setLeave(empId, day, code, reason) {
+      const emp = employees.find(e => e.id === empId);
+      emp.daily[day] = { status: code, shift: '08:00 - 17:00', checkIn: '-', checkOut: '-', hours: 0, corrected: false, correctionNote: '-' };
+      if (['I', 'S', 'C'].includes(code)) {
+        const catMap = { I: 'Izin', S: 'Sakit', C: 'Cuti Tahunan' };
+        emp.leaveLogs.push({ dateStr: `${String(day).padStart(2, '0')} Okt 2026`, category: catMap[code], duration: '1 Hari', reason });
+      }
+    }
+
+    function initDropdowns() {
+      const daySelect = document.getElementById('filterDay');
+      const simDaySelect = document.getElementById('simDay');
+      for (let d = 1; d <= 31; d++) {
+        daySelect.innerHTML += `<option value="${d}">Tanggal ${d} Okt (${getDayName(d)}) - Harian</option>`;
+        simDaySelect.innerHTML += `<option value="${d}" ${d === 21 ? 'selected' : ''}>${d} Oktober 2026</option>`;
+      }
+      const simEmpSelect = document.getElementById('simEmployee');
+      employees.forEach(e => {
+        simEmpSelect.innerHTML += `<option value="${e.id}" ${e.id === 'EMP6' ? 'selected' : ''}>${e.name} (${e.role})</option>`;
+      });
+    }
+
+    function getEmployeeStats(emp, selectedDay) {
+      let workDays = 0, totalHours = 0, countH = 0, countL = 0, countS = 0, countI = 0, countC = 0, countA = 0, corrections = 0;
+      const start = selectedDay === 'ALL' ? 1 : Number(selectedDay);
+      const end = selectedDay === 'ALL' ? 31 : Number(selectedDay);
+      for (let d = start; d <= end; d++) {
+        const log = emp.daily[d];
+        if (log.status === 'H') { workDays++; countH++; totalHours += log.hours; }
+        if (log.status === 'L') countL++;
+        if (log.status === 'S') countS++;
+        if (log.status === 'I') countI++;
+        if (log.status === 'C') countC++;
+        if (log.status === 'A') countA++;
+        if (log.corrected) corrections++;
+      }
+      return { workDays, totalHours: Math.round(totalHours * 10) / 10, countH, countL, countS, countI, countC, countA, totalLeave: countI + countS + countC, corrections };
+    }
+
+    function applyAllFilters() {
+      const branch = document.getElementById('filterBranch').value;
+      const role = document.getElementById('filterRole').value;
+      const day = document.getElementById('filterDay').value;
+      const search = document.getElementById('filterSearch').value.trim().toLowerCase();
+
+      const filtered = employees.filter(e =>
+        (branch === 'ALL' || e.branch === branch) &&
+        (role === 'ALL' || e.role === role) &&
+        (!search || e.name.toLowerCase().includes(search))
+      );
+
+      renderKPIs(filtered, day);
+      renderTable2A(filtered, day);
+      renderTable2B(branch, role, day, search);
+      renderTableLeave(filtered);
+      renderCalendarMatrix(filtered);
+    }
+
+    function renderKPIs(filtered, day) {
+      let workDays = 0, hours = 0, i = 0, s = 0, c = 0, a = 0, cor = 0;
+      filtered.forEach(e => {
+        const st = getEmployeeStats(e, day);
+        workDays += st.workDays; hours += st.totalHours; i += st.countI; s += st.countS; c += st.countC; a += st.countA; cor += st.corrections;
+      });
+      const rate = (workDays + i + s + c + a) > 0 ? Math.round((workDays / (workDays + i + s + c + a)) * 100) : 0;
+      document.getElementById('kpiTotalEmp').textContent = `${filtered.length} Orang`;
+      document.getElementById('kpiRoleBreakdown').textContent = `${filtered.filter(x => x.role === 'AE').length} AE • ${filtered.filter(x => x.role === 'BL').length} BL`;
+      document.getElementById('kpiAttendanceRate').textContent = `${rate}%`;
+      document.getElementById('kpiTotalWorkDays').textContent = `${workDays} Hari Kerja`;
+      document.getElementById('kpiTotalHours').textContent = `${Math.round(hours)} Jam`;
+      document.getElementById('kpiTotalLeave').textContent = `${i + s + c} Hari`;
+      document.getElementById('kpiLeaveBreakdown').textContent = `${i} Izin • ${s} Sakit • ${c} Cuti`;
+      document.getElementById('kpiTotalCorrections').textContent = `${cor} Kali`;
+    }
+
+    function renderTable2A(filtered, day) {
+      const thead = document.getElementById('thead2A');
+      const tbody = document.getElementById('tbody2A');
+      if (day === 'ALL') {
+        document.getElementById('modeBadge2A').textContent = 'Mode: Rekap Bulanan';
+        thead.innerHTML = `<tr><th class="py-3 px-6">Nama Karyawan</th><th class="py-3 px-4">Branch</th><th class="py-3 px-4">Posisi</th><th class="py-3 px-4">Jumlah Hari Kerja</th><th class="py-3 px-4">Total Jam Kerja</th><th class="py-3 px-4">Koreksi Jadwal</th><th class="py-3 px-6 text-right">Aksi</th></tr>`;
+        tbody.innerHTML = filtered.map(e => {
+          const st = getEmployeeStats(e, 'ALL');
+          return `<tr class="hover:bg-slate-50">
+            <td class="py-3.5 px-6 font-semibold">${e.name}</td>
+            <td class="py-3.5 px-4">${e.branch}</td>
+            <td class="py-3.5 px-4"><span class="px-2 py-0.5 rounded text-xs font-bold bg-sky-100 text-sky-800">${e.role}</span></td>
+            <td class="py-3.5 px-4">${st.workDays} Hari</td>
+            <td class="py-3.5 px-4 font-bold text-indigo-700">${st.totalHours} Jam</td>
+            <td class="py-3.5 px-4">${st.corrections > 0 ? `<span class="px-2 py-0.5 rounded bg-orange-100 text-orange-800 text-xs font-semibold">${st.corrections} Kali</span>` : '0 Kali'}</td>
+            <td class="py-3.5 px-6 text-right"><button onclick="openWorkDetailModal('${e.id}')" class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg">[Lihat Detail]</button></td>
+          </tr>`;
+        }).join('');
+      } else {
+        const d = Number(day);
+        document.getElementById('modeBadge2A').textContent = `Mode: Harian (${d} Okt 2026)`;
+        thead.innerHTML = `<tr><th class="py-3 px-6">Nama</th><th class="py-3 px-4">Posisi</th><th class="py-3 px-4">Branch</th><th class="py-3 px-4">Tanggal</th><th class="py-3 px-4">Check-In</th><th class="py-3 px-4">Check-Out</th><th class="py-3 px-4">Total Jam Kerja</th><th class="py-3 px-4">Status</th><th class="py-3 px-6 text-right">Aksi</th></tr>`;
+        tbody.innerHTML = filtered.map(e => {
+          const log = e.daily[d];
+          return `<tr class="hover:bg-slate-50 ${log.corrected ? 'bg-orange-50/40' : ''}">
+            <td class="py-3.5 px-6 font-semibold">${e.name}</td>
+            <td class="py-3.5 px-4"><span class="px-2 py-0.5 rounded text-xs font-bold bg-sky-100 text-sky-800">${e.role}</span></td>
+            <td class="py-3.5 px-4">${e.branch}</td>
+            <td class="py-3.5 px-4">${d} Okt 2026</td>
+            <td class="py-3.5 px-4 font-mono">${log.checkIn}</td>
+            <td class="py-3.5 px-4 font-mono">${log.checkOut}</td>
+            <td class="py-3.5 px-4 font-bold text-indigo-700">${log.hours} Jam</td>
+            <td class="py-3.5 px-4"><span class="font-semibold">${log.status}</span> ${log.corrected ? '<span class="ml-1 px-2 py-0.5 rounded text-[11px] bg-orange-500 text-white font-bold">Dikoreksi</span>' : ''}</td>
+            <td class="py-3.5 px-6 text-right"><button onclick="openWorkDetailModal('${e.id}')" class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg">[Lihat Detail]</button></td>
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    function renderTable2B(branch, role, day, search) {
+      const logs = correctionLogs.filter(c =>
+        (branch === 'ALL' || c.branch === branch) &&
+        (role === 'ALL' || c.role === role) &&
+        (day === 'ALL' || String(c.day) === String(day)) &&
+        (!search || c.empName.toLowerCase().includes(search))
+      );
+      document.getElementById('tbody2B').innerHTML = logs.map(c => `
+        <tr>
+          <td class="py-3 px-4 text-xs font-mono text-slate-500">${c.timestamp}</td>
+          <td class="py-3 px-4 font-semibold">${c.executor}</td>
+          <td class="py-3 px-4 font-semibold">${c.empName} (${c.branch})</td>
+          <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs font-bold bg-sky-100 text-sky-800">${c.role}</span></td>
+          <td class="py-3 px-4 font-semibold">${c.day} Okt ${c.year}</td>
+          <td class="py-3 px-4"><span class="px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-700">${c.oldStatus}</span></td>
+          <td class="py-3 px-4"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-800">${c.newStatus}</span></td>
+          <td class="py-3 px-4 text-xs text-slate-600">${c.reason}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderTableLeave(filtered) {
+      document.getElementById('tbodyLeave').innerHTML = filtered.map(e => {
+        const st = getEmployeeStats(e, 'ALL');
+        return `<tr>
+          <td class="py-3.5 px-6 font-semibold">${e.name}</td>
+          <td class="py-3.5 px-4">${e.branch}</td>
+          <td class="py-3.5 px-4"><span class="px-2 py-0.5 rounded text-xs font-bold bg-sky-100 text-sky-800">${e.role}</span></td>
+          <td class="py-3.5 px-4 text-xs">${st.countI} Izin • ${st.countS} Sakit • ${st.countC} Cuti</td>
+          <td class="py-3.5 px-4 font-bold">${st.totalLeave} Hari</td>
+          <td class="py-3.5 px-6 text-right"><button onclick="openLeaveDetailModal('${e.id}')" class="text-xs font-semibold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg">[Detail Riwayat]</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderCalendarMatrix(filtered) {
+      let topH = '', botH = '';
+      for (let d = 1; d <= 31; d++) {
+        topH += `<th class="py-1.5 px-2 min-w-[34px] border-r">${d}</th>`;
+        botH += `<th class="py-1 px-2 min-w-[34px] border-r text-[10px] text-slate-400">${getDayName(d)}</th>`;
+      }
+      document.getElementById('calendarThead').innerHTML = `
+        <tr><th rowspan="2" class="sticky-col-1 py-2 px-4 text-left min-w-[180px]">Nama Karyawan</th><th rowspan="2" class="sticky-col-2 py-2 px-3 min-w-[70px]">Role</th><th rowspan="2" class="sticky-col-3 py-2 px-3 min-w-[95px]">Branch</th>${topH}<th colspan="6" class="sticky-right py-1.5 px-2 bg-slate-200">Rekap</th></tr>
+        <tr>${botH}<th class="py-1 px-2 bg-emerald-50">H</th><th class="py-1 px-2 bg-rose-50">L</th><th class="py-1 px-2 bg-amber-50">S</th><th class="py-1 px-2 bg-red-50">A</th><th class="py-1 px-2 bg-sky-50">I</th><th class="py-1 px-2 bg-purple-50">C</th></tr>
+      `;
+      const colors = { H: 'bg-emerald-50 text-emerald-800', L: 'bg-rose-100 text-rose-700 font-bold', S: 'bg-amber-100 text-amber-800 font-bold', I: 'bg-sky-100 text-sky-800 font-bold', C: 'bg-purple-100 text-purple-800 font-bold', A: 'bg-red-600 text-white font-bold' };
+      document.getElementById('calendarTbody').innerHTML = filtered.map(e => {
+        const st = getEmployeeStats(e, 'ALL');
+        let cells = '';
+        for (let d = 1; d <= 31; d++) {
+          const log = e.daily[d];
+          cells += `<td title="${log.correctionNote}" class="relative py-2.5 px-1 border-r ${colors[log.status]}">${log.status}${log.corrected ? '<span class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-orange-500"></span>' : ''}</td>`;
+        }
+        return `<tr>
+          <td class="sticky-col-1 py-2.5 px-4 text-left font-semibold truncate max-w-[180px]">${e.name}</td>
+          <td class="sticky-col-2 py-2.5 px-3 font-bold">${e.role}</td>
+          <td class="sticky-col-3 py-2.5 px-3 text-left">${e.branch}</td>
+          ${cells}
+          <td class="py-2.5 px-2 font-bold">${st.countH}</td><td class="py-2.5 px-2 font-bold">${st.countL}</td><td class="py-2.5 px-2 font-bold">${st.countS}</td><td class="py-2.5 px-2 font-bold">${st.countA}</td><td class="py-2.5 px-2 font-bold">${st.countI}</td><td class="py-2.5 px-2 font-bold">${st.countC}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function openWorkDetailModal(empId) {
+      const emp = employees.find(e => e.id === empId);
+      document.getElementById('modalWorkTitle').textContent = `Rincian Jam Kerja — ${emp.name}`;
+      let rows = '';
+      for (let d = 1; d <= 31; d++) {
+        const log = emp.daily[d];
+        rows += `<tr class="${log.corrected ? 'bg-orange-50' : ''}"><td class="py-2 px-4">${d} Okt 2026</td><td class="py-2 px-4 font-bold">${log.status}</td><td class="py-2 px-4">${log.shift}</td><td class="py-2 px-4">${log.checkIn}</td><td class="py-2 px-4">${log.checkOut}</td><td class="py-2 px-4 font-bold">${log.hours} Jam</td><td class="py-2 px-4 text-xs">${log.correctionNote}</td></tr>`;
+      }
+      document.getElementById('modalWorkTbody').innerHTML = rows;
+      document.getElementById('modalWorkDetail').classList.remove('hidden');
+    }
+
+    function openLeaveDetailModal(empId) {
+      const emp = employees.find(e => e.id === empId);
+      document.getElementById('modalLeaveTitle').textContent = `Riwayat Izin & Cuti — ${emp.name}`;
+      document.getElementById('modalLeaveTbody').innerHTML = emp.leaveLogs.map(l => `<tr><td class="py-3 px-4 font-semibold">${l.dateStr}</td><td class="py-3 px-4">${l.category}</td><td class="py-3 px-4">${l.duration}</td><td class="py-3 px-4">${l.reason}</td></tr>`).join('') || `<tr><td colspan="4" class="py-4 text-center text-slate-400">Tidak ada riwayat izin/cuti</td></tr>`;
+      document.getElementById('modalLeaveDetail').classList.remove('hidden');
+    }
+
+    function openSimulationModal() { updateSimInitialStatus(); document.getElementById('modalSimulation').classList.remove('hidden'); }
+    function updateSimInitialStatus() {
+      const emp = employees.find(e => e.id === document.getElementById('simEmployee').value);
+      const day = Number(document.getElementById('simDay').value);
+      document.getElementById('simOldStatus').value = emp.daily[day].status;
+    }
+    function submitSimulationCorrection(e) {
+      e.preventDefault();
+      const executor = document.getElementById('simExecutor').value;
+      const emp = employees.find(x => x.id === document.getElementById('simEmployee').value);
+      const day = Number(document.getElementById('simDay').value);
+      const newSt = document.getElementById('simNewStatus').value;
+      const reason = document.getElementById('simReason').value;
+      const oldSt = emp.daily[day].status;
+
+      emp.daily[day] = {
+        status: newSt, shift: '08:00 - 17:00', checkIn: newSt === 'H' ? '08:00' : '-', checkOut: newSt === 'H' ? '17:00' : '-',
+        hours: newSt === 'H' ? 9 : 0, corrected: true, correctionNote: `Dikoreksi oleh ${executor}: ${oldSt} → ${newSt}`
+      };
+      correctionLogs.unshift({
+        timestamp: 'Baru saja', executor, empName: emp.name, role: emp.role, branch: emp.branch,
+        day, year: 2026, oldStatus: oldSt, newStatus: newSt === 'H' ? 'Masuk (08:00 - 17:00)' : newSt, reason
+      });
+      closeModal('modalSimulation');
+      applyAllFilters();
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function quickSelectDate12() { document.getElementById('filterDay').value = '12'; applyAllFilters(); }
+    function quickSelectMonthly() { document.getElementById('filterDay').value = 'ALL'; applyAllFilters(); }
+    function resetFilters() { document.getElementById('filterBranch').value = 'ALL'; document.getElementById('filterRole').value = 'ALL'; document.getElementById('filterDay').value = 'ALL'; document.getElementById('filterSearch').value = ''; applyAllFilters(); }
+    function exportCalendarCSV() { alert('File CSV siap diunduh!'); }
+    function copyCalendarToClipboard() { document.getElementById('copyBtnText').textContent = '✓ Tersalin!'; }
+
+    window.addEventListener('DOMContentLoaded', () => { initDummySchedule(); initDropdowns(); applyAllFilters(); });
+  </script>
+</body>
+</html>
